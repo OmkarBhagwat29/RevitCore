@@ -24,7 +24,6 @@ namespace RevitCore.Utils
                 img.BeginInit();
                 img.StreamSource = stream;
                 img.EndInit();
-                //this is a test PR
             }
             catch (Exception)
             {
