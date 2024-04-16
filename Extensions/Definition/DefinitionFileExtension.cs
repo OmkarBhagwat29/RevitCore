@@ -31,6 +31,14 @@ namespace RevitCore.Extensions.Definition
             return definitionFile.Groups.Any(g=>g.Name == groupName);
         }
 
+        public static IEnumerable<IEnumerable<(string groupName, string parameterName)>> GetAllParametersFromFile(this DefinitionFile definitionFile)
+        {
+            foreach (var group in definitionFile.Groups)
+            {
+               yield return group.GetAllGroupParameters();
+            }
+        }
+
 
     }
 }

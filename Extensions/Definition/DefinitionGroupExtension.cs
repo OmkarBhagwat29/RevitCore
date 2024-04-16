@@ -1,4 +1,6 @@
 ﻿
+using System.Runtime.CompilerServices;
+
 namespace RevitCore.Extensions.Definition
 {
     public static class DefinitionGroupExtension
@@ -49,5 +51,16 @@ namespace RevitCore.Extensions.Definition
 
         }
 #endif
+
+        public static IEnumerable<(string groupName, string parameterName)> GetAllGroupParameters(this DefinitionGroup definitionGroup)
+        {
+            
+            foreach (var definition in definitionGroup.Definitions)
+            {
+               yield return (groupName: definitionGroup.Name, parameterName: definition.Name);
+            }
+        }
+
     }
+
 }
