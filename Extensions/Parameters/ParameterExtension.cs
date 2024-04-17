@@ -1,5 +1,7 @@
 ﻿
 using Autodesk.Revit.UI;
+using RevitCore.Extensions.Definition;
+using RevitCore.Extensions.FamilyHelpers;
 
 namespace RevitCore.Extensions.Parameters
 {
@@ -48,5 +50,34 @@ namespace RevitCore.Extensions.Parameters
         }
 
         public static IEnumerable<ElementId> GetParameterIds(this List<BuiltInParameter> parameters) => parameters.Select(p => new ElementId(p));
+
+        public static void AddSharedParametersToFamily(this Family family, Document doc,
+            List<ExternalDefinition> definitionsToAdd,ForgeTypeId groupTypeId, bool isInstance)
+        {
+
+          var familyDocument = doc.EditFamily(family);
+
+            if (familyDocument == null)
+                throw new ArgumentNullException("family failed to edit");
+
+            FamilyManager familyManager = familyDocument.FamilyManager;
+
+            familyDocument.UseTransaction(() =>
+            {
+                familyManager.AddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId, isInstance);
+
+            }, "Shared Parameters added");
+
+            familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
+        }
+
+        private static void AddSharedParametersToFamilyManager(this FamilyManager familyManager,
+            List<ExternalDefinition> externalDefinitions,ForgeTypeId groupTypeId, bool isInstance)
+        {
+            foreach (var definition in externalDefinitions)
+            {
+                familyManager.AddParameter(definition, groupTypeId, isInstance);
+            }
+        }
     }
 }

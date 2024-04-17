@@ -119,6 +119,27 @@ namespace RevitCore.Extensions
                 .WhereElementIsNotElementType()
                 .Where(e=>validate(e));
         }
+
+        public static bool FamilyExists(this Document doc, string familyName, out Family family)
+        {
+            family = null;
+            var familySymbols = new FilteredElementCollector(doc)
+                .OfClass(typeof(FamilySymbol)).ToElements();
+
+
+            // Iterate through each family symbol and check if the family name matches
+            foreach (Element elem in familySymbols)
+            {
+                FamilySymbol familySymbol = elem as FamilySymbol;
+                if (familySymbol != null && familySymbol.Family != null && familySymbol.Family.Name == familyName)
+                {
+                    // Family with the specified name exists in the document
+                    family = familySymbol.Family;
+                    return true;
+                }
+            }
+            return false;
+        }
         
     }
 }
