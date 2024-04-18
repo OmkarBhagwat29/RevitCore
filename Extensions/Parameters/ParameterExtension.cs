@@ -1,6 +1,6 @@
 ﻿
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RevitCore.Extensions.Definition;
 using RevitCore.Extensions.FamilyHelpers;
 
 namespace RevitCore.Extensions.Parameters
@@ -51,33 +51,83 @@ namespace RevitCore.Extensions.Parameters
 
         public static IEnumerable<ElementId> GetParameterIds(this List<BuiltInParameter> parameters) => parameters.Select(p => new ElementId(p));
 
-        public static void AddSharedParametersToFamily(this Family family, Document doc,
-            List<ExternalDefinition> definitionsToAdd,ForgeTypeId groupTypeId, bool isInstance)
+        public static void TryAddSharedParametersToFamily(this Family family, Document doc,
+            List<(Definition definition, bool isInstance)> definitionsToAdd,ForgeTypeId groupTypeId)
         {
 
-          var familyDocument = doc.EditFamily(family);
-
-            if (familyDocument == null)
-                throw new ArgumentNullException("family failed to edit");
+          var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
 
             FamilyManager familyManager = familyDocument.FamilyManager;
 
             familyDocument.UseTransaction(() =>
             {
-                familyManager.AddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId, isInstance);
+                familyManager.TryAddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId);
 
             }, "Shared Parameters added");
 
             familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
         }
 
-        private static void AddSharedParametersToFamilyManager(this FamilyManager familyManager,
-            List<ExternalDefinition> externalDefinitions,ForgeTypeId groupTypeId, bool isInstance)
+        private static void TryAddSharedParametersToFamilyManager(this FamilyManager familyManager,
+            List<(Definition definition, bool isInstance)> definitionData,ForgeTypeId groupTypeId)
         {
-            foreach (var definition in externalDefinitions)
+            try
             {
-                familyManager.AddParameter(definition, groupTypeId, isInstance);
+                foreach (var data in definitionData)
+                {
+                    if (data.definition is not ExternalDefinition externalDefinition)
+                        throw new ArgumentNullException($"Parameter {data.definition.Name} can not add to family.");
+
+                    if(!familyManager.FamilySharedParameterExists(externalDefinition,out FamilyParameter parameter))
+                        familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
+                }
             }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
+        }
+
+        public static void TryDeleteSharedParametersFromFamily(this Family family, Document doc,
+            List<Definition> definitions)
+        {
+            var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
+            FamilyManager familyManager = familyDocument.FamilyManager;
+
+            familyDocument.UseTransaction(() => {
+
+                foreach (var def in definitions)
+                {
+                    if (familyManager.FamilySharedParameterExists(def as ExternalDefinition, out FamilyParameter familyParameter))
+                    {
+                        familyManager.RemoveParameter(familyParameter);
+                    }
+                }
+            
+            }, "Shared Parameters deleted");
+        }
+
+        public static bool FamilySharedParameterExists(this FamilyManager manager,
+            ExternalDefinition externalDefinition, out FamilyParameter familyParameter)
+        {
+            familyParameter = null;
+            foreach (var item in manager.Parameters)
+            {
+                if (item is not FamilyParameter fm)
+                    continue;
+
+                if (fm.Definition is ExternalDefinition extDef)
+                {
+                    if (extDef.GUID == externalDefinition.GUID)
+                    {
+                        familyParameter = fm;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿
 using System.Runtime.CompilerServices;
 
-namespace RevitCore.Extensions.Definition
+namespace RevitCore.Extensions.DefinitionExt
 {
     public static class DefinitionGroupExtension
     {

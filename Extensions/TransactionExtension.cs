@@ -1,5 +1,7 @@
 ﻿
 
+using Autodesk.Revit.UI;
+
 namespace RevitCore.Extensions
 {
     public static class TransactionExtension
@@ -18,11 +20,9 @@ namespace RevitCore.Extensions
                 catch
                 {
                     t.RollBack();
+                    TaskDialog.Show("Error", "Operation Failed!!!");
                 }
-
             }
-
-
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿
 using Autodesk.Revit.DB;
-using RevitCore.Extensions.Definition;
+using RevitCore.Extensions.DefinitionExt;
 
 
 namespace RevitCore.Extensions

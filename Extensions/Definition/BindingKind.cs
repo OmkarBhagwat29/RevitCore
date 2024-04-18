@@ -1,5 +1,5 @@
 ﻿
-namespace RevitCore.Extensions.Definition
+namespace RevitCore.Extensions.DefinitionExt
 {
     public enum BindingKind
     {
