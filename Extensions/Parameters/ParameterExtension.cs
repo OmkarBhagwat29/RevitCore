@@ -82,9 +82,9 @@ namespace RevitCore.Extensions.Parameters
                         familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
                 }
             }
-            catch (Exception e)
+            catch
             {
-                throw e;
+                throw;
             }
 
         }
