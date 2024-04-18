@@ -20,7 +20,6 @@ namespace RevitCore.Extensions
                 catch
                 {
                     t.RollBack();
-                    TaskDialog.Show("Error", "Operation Failed!!!");
                 }
             }
         }

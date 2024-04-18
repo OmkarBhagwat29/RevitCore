@@ -7,7 +7,7 @@ namespace RevitCore.Extensions.Parameters
 {
     public static class ParameterExtension
     {
-        public static void SetBuiltInParameterValue(this Element element, BuiltInParameter parameter, object value,bool showPopUp)
+        public static void SetBuiltInParameterValue(this Element element, BuiltInParameter parameter, object value, bool showPopUp)
         {
             Parameter param = element.get_Parameter(parameter);
 
@@ -52,50 +52,51 @@ namespace RevitCore.Extensions.Parameters
         public static IEnumerable<ElementId> GetParameterIds(this List<BuiltInParameter> parameters) => parameters.Select(p => new ElementId(p));
 
         public static void TryAddSharedParametersToFamily(this Family family, Document doc,
-            List<(Definition definition, bool isInstance)> definitionsToAdd,ForgeTypeId groupTypeId)
+            List<(Definition definition, bool isInstance)> definitionsToAdd, ForgeTypeId groupTypeId)
         {
 
-          var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
+            var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
 
             FamilyManager familyManager = familyDocument.FamilyManager;
 
             familyDocument.UseTransaction(() =>
             {
-                familyManager.TryAddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId);
+              var familyParameters =  familyManager
+                .TryAddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId);
 
+                if (familyParameters.Count() != definitionsToAdd.Count)
+                    throw new ArgumentNullException($"Operation Failed!!! Some parameters were not able to add to Family: {family.Name}");
             }, "Shared Parameters added");
 
             familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
         }
 
-        private static void TryAddSharedParametersToFamilyManager(this FamilyManager familyManager,
-            List<(Definition definition, bool isInstance)> definitionData,ForgeTypeId groupTypeId)
+        private static IEnumerable<FamilyParameter> TryAddSharedParametersToFamilyManager(this FamilyManager familyManager,
+            List<(Definition definition, bool isInstance)> definitionData, ForgeTypeId groupTypeId)
         {
-            try
+            foreach (var data in definitionData)
             {
-                foreach (var data in definitionData)
+                if (data.definition is not ExternalDefinition externalDefinition)
+                    throw new ArgumentNullException($"Parameter {data.definition.Name} can not add to family.");
+
+                if (!familyManager.FamilySharedParameterExists(externalDefinition, out FamilyParameter parameter))
                 {
-                    if (data.definition is not ExternalDefinition externalDefinition)
-                        throw new ArgumentNullException($"Parameter {data.definition.Name} can not add to family.");
-
-                    if(!familyManager.FamilySharedParameterExists(externalDefinition,out FamilyParameter parameter))
-                        familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
+                    parameter = familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
                 }
-            }
-            catch
-            {
-                throw;
-            }
 
+                yield return parameter;
+
+            }
         }
 
-        public static void TryDeleteSharedParametersFromFamily(this Family family, Document doc,
+        public static void DeleteSharedParametersFromFamily(this Family family, Document doc,
             List<Definition> definitions)
         {
             var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
             FamilyManager familyManager = familyDocument.FamilyManager;
 
-            familyDocument.UseTransaction(() => {
+            familyDocument.UseTransaction(() =>
+            {
 
                 foreach (var def in definitions)
                 {
@@ -104,7 +105,7 @@ namespace RevitCore.Extensions.Parameters
                         familyManager.RemoveParameter(familyParameter);
                     }
                 }
-            
+
             }, "Shared Parameters deleted");
         }
 
