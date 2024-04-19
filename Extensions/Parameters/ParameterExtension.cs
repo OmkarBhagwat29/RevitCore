@@ -100,33 +100,27 @@ namespace RevitCore.Extensions.Parameters
 
                 foreach (var def in definitions)
                 {
-                    if (familyManager.FamilySharedParameterExists(def as ExternalDefinition, out FamilyParameter familyParameter))
+                    if (familyManager.FamilySharedParameterExists(def, out FamilyParameter familyParameter))
                     {
                         familyManager.RemoveParameter(familyParameter);
                     }
                 }
 
             }, "Shared Parameters deleted");
+
+            familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
         }
 
         public static bool FamilySharedParameterExists(this FamilyManager manager,
-            ExternalDefinition externalDefinition, out FamilyParameter familyParameter)
+            Definition definition, out FamilyParameter familyParameter)
         {
-            familyParameter = null;
-            foreach (var item in manager.Parameters)
-            {
-                if (item is not FamilyParameter fm)
-                    continue;
+            familyParameter = manager.get_Parameter(definition.Name);
 
-                if (fm.Definition is ExternalDefinition extDef)
-                {
-                    if (extDef.GUID == externalDefinition.GUID)
-                    {
-                        familyParameter = fm;
-                        return true;
-                    }
-                }
-            }
+            if (familyParameter == null)
+                return false;
+
+            if(familyParameter.IsShared)
+                return true;
 
             return false;
         }
