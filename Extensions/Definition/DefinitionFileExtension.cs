@@ -1,5 +1,5 @@
 ﻿
-namespace RevitCore.Extensions.Definition
+namespace RevitCore.Extensions.DefinitionExt
 {
     public static class DefinitionFileExtension
     {
@@ -29,6 +29,14 @@ namespace RevitCore.Extensions.Definition
         public static bool GroupExists(this DefinitionFile definitionFile, string groupName)
         {
             return definitionFile.Groups.Any(g=>g.Name == groupName);
+        }
+
+        public static IEnumerable<IEnumerable<(string groupName, string parameterName)>> GetAllParametersFromFile(this DefinitionFile definitionFile)
+        {
+            foreach (var group in definitionFile.Groups)
+            {
+               yield return group.GetAllGroupParameters();
+            }
         }
 
 
