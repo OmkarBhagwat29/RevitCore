@@ -2,6 +2,7 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using RevitCore.Extensions.FamilyHelpers;
+using System.Runtime.CompilerServices;
 
 namespace RevitCore.Extensions.Parameters
 {
@@ -51,29 +52,24 @@ namespace RevitCore.Extensions.Parameters
 
         public static IEnumerable<ElementId> GetParameterIds(this List<BuiltInParameter> parameters) => parameters.Select(p => new ElementId(p));
 
-        public static void TryAddSharedParametersToFamily(this Family family, Document doc,
+        public static void TryAddSharedParametersToFamily(this Document familyDocument,
             List<(Definition definition, bool isInstance)> definitionsToAdd, ForgeTypeId groupTypeId)
         {
+            if (!familyDocument.IsFamilyDocument)
+                throw new Exception("This is not a family document, it must be family document to add shared parameter to a family");
 
-            var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
 
-            FamilyManager familyManager = familyDocument.FamilyManager;
-
-            familyDocument.UseTransaction(() =>
-            {
-              var familyParameters =  familyManager
+              var familyParameters = familyDocument
                 .TryAddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId);
 
                 if (familyParameters.Count() != definitionsToAdd.Count)
-                    throw new ArgumentNullException($"Operation Failed!!! Some parameters were not able to add to Family: {family.Name}");
-            }, "Shared Parameters added");
-
-            familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
+                    throw new ArgumentNullException($"Operation Failed!!! Some parameters were not able to add to Family: {familyDocument.PathName}");
         }
 
-        private static IEnumerable<FamilyParameter> TryAddSharedParametersToFamilyManager(this FamilyManager familyManager,
+        private static IEnumerable<FamilyParameter> TryAddSharedParametersToFamilyManager(this Document familyDocument,
             List<(Definition definition, bool isInstance)> definitionData, ForgeTypeId groupTypeId)
         {
+            var familyManager = familyDocument.FamilyManager;
             foreach (var data in definitionData)
             {
                 if (data.definition is not ExternalDefinition externalDefinition)
@@ -83,32 +79,36 @@ namespace RevitCore.Extensions.Parameters
                 {
                     parameter = familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
                 }
+                else
+                {
+                    //if exists remove and update with new settings
+                    familyDocument.DeleteSharedParametersFromFamily([data.definition]);
+
+                    parameter = familyManager.AddParameter(externalDefinition, groupTypeId, data.isInstance);
+                }
+
+                if (parameter == null)
+                    throw new ArgumentNullException($"Operation Failed!\n{data.definition.Name} was not able to add to family {familyDocument.PathName}");
 
                 yield return parameter;
-
             }
         }
 
-        public static void DeleteSharedParametersFromFamily(this Family family, Document doc,
+        public static void DeleteSharedParametersFromFamily(this Document familyDocument,
             List<Definition> definitions)
         {
-            var familyDocument = doc.EditFamily(family) ?? throw new ArgumentNullException("family failed to edit");
+          
             FamilyManager familyManager = familyDocument.FamilyManager;
+            if (!familyDocument.IsFamilyDocument)
+                throw new Exception("This is not a family document, it must be family document to delete shared parameters from a family");
 
-            familyDocument.UseTransaction(() =>
+            foreach (var def in definitions)
             {
-
-                foreach (var def in definitions)
+                if (familyManager.FamilySharedParameterExists(def, out FamilyParameter familyParameter))
                 {
-                    if (familyManager.FamilySharedParameterExists(def, out FamilyParameter familyParameter))
-                    {
-                        familyManager.RemoveParameter(familyParameter);
-                    }
+                    familyManager.RemoveParameter(familyParameter);
                 }
-
-            }, "Shared Parameters deleted");
-
-            familyDocument.LoadFamily(doc, new LoadBatchFamiliesOption());
+            }
         }
 
         public static bool FamilySharedParameterExists(this FamilyManager manager,
@@ -119,10 +119,23 @@ namespace RevitCore.Extensions.Parameters
             if (familyParameter == null)
                 return false;
 
-            if(familyParameter.IsShared)
+            if (definition is not ExternalDefinition externalDefinition)
+                return false;
+
+            if (familyParameter.IsShared && externalDefinition.GUID == familyParameter.GUID)
                 return true;
 
             return false;
+        }
+
+        public static IEnumerable<ParameterGroupInfo> GetParameterGroups()
+        {
+            var groupForgeIds = ParameterUtils.GetAllBuiltInGroups();
+
+            foreach (var forgeGroupId in groupForgeIds)
+            {
+                yield return new ParameterGroupInfo() {ForgeTypeId = forgeGroupId, Name = forgeGroupId.ToGroupLabel()};
+            }
         }
     }
 }
