@@ -62,13 +62,14 @@ namespace RevitCore.Extensions.Parameters
               var familyParameters = familyDocument
                 .TryAddSharedParametersToFamilyManager(definitionsToAdd, groupTypeId);
 
-                if (familyParameters.Count() != definitionsToAdd.Count)
+                if (familyParameters.Count != definitionsToAdd.Count)
                     throw new ArgumentNullException($"Operation Failed!!! Some parameters were not able to add to Family: {familyDocument.PathName}");
         }
 
-        private static IEnumerable<FamilyParameter> TryAddSharedParametersToFamilyManager(this Document familyDocument,
+        private static List<FamilyParameter> TryAddSharedParametersToFamilyManager(this Document familyDocument,
             List<(Definition definition, bool isInstance)> definitionData, ForgeTypeId groupTypeId)
         {
+            var paramData = new List<FamilyParameter>();
             var familyManager = familyDocument.FamilyManager;
             foreach (var data in definitionData)
             {
@@ -90,8 +91,10 @@ namespace RevitCore.Extensions.Parameters
                 if (parameter == null)
                     throw new ArgumentNullException($"Operation Failed!\n{data.definition.Name} was not able to add to family {familyDocument.PathName}");
 
-                yield return parameter;
+                paramData.Add(parameter);
             }
+
+            return paramData;
         }
 
         public static void DeleteSharedParametersFromFamily(this Document familyDocument,
