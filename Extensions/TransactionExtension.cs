@@ -23,5 +23,27 @@ namespace RevitCore.Extensions
                 }
             }
         }
+
+        public static TReturn UseTransaction<TReturn>(this Document doc, Func<TReturn> doAction,
+            string transactionName = "Default")
+        {
+            TReturn output = default;
+
+            using (Transaction t = new Transaction(doc, transactionName))
+            {
+                try
+                {
+                    t.Start();
+                    output = doAction.Invoke();
+                    t.Commit();
+                }
+                catch
+                {
+                    t.RollBack();
+                }
+            }
+
+            return output;
+        }
     }
 }
