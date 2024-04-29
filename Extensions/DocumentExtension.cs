@@ -31,6 +31,15 @@ namespace RevitCore.Extensions
             return new TypeBinding(categorySet);
         }
 
+        public static IEnumerable<InternalDefinition> GetInternalDefinitions(this Document doc)
+        {
+            var iterator = doc.ParameterBindings.ForwardIterator();
+
+            while (iterator.MoveNext())
+            {
+                yield return iterator.Key as InternalDefinition;
+            }
+        }
 
         public static IEnumerable<TElement> GetElements<TElement>(this Document doc, Func<TElement,bool>validate = null)
             where TElement : Element

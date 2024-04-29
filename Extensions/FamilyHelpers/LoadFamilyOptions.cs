@@ -1,11 +1,17 @@
 ﻿
 namespace RevitCore.Extensions.FamilyHelpers
 {
-    public class LoadBatchFamiliesOption : IFamilyLoadOptions
+    public class LoadFamilyOptions : IFamilyLoadOptions
     {
+        private readonly bool overwriteParameterValues;
+
+        public LoadFamilyOptions(bool _overwriteParameterValues)
+        {
+            overwriteParameterValues = _overwriteParameterValues;
+        }
         public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
         {
-            overwriteParameterValues = true;
+            overwriteParameterValues = this.overwriteParameterValues;
             return true;
         }
 
