@@ -17,6 +17,17 @@ namespace RevitCore.Extensions
             return directShape;
         }
 
+        public static DirectShape CreateDirectShape(
+    this Document document,
+    GeometryObject geometryObject,
+    BuiltInCategory builtInCategory = BuiltInCategory.OST_GenericModel)
+        {
+
+            var directShape = DirectShape.CreateElement(document, new ElementId(builtInCategory));
+            directShape.SetShape(new List<GeometryObject>() { geometryObject });
+            return directShape;
+        }
+
         public static Binding CreateBinding(this Document doc, List<BuiltInCategory> categories,
             BindingKind bindingKind)
         {
