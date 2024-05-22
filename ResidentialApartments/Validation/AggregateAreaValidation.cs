@@ -1,39 +1,73 @@
 ﻿
 
 
+using RevitCore.ResidentialApartments.Rooms;
+using System.Text;
+using System.Windows.Data;
+
 namespace RevitCore.ResidentialApartments.Validation
 {
     public class AggregateAreaValidation : ISpatialValidation
     {
-        public AggregateAreaValidation(List<SpatialElement> spatialElements,
-            List<double> requiredAreas)
+        public AggregateAreaValidation(List<double> achievedAreas,
+            List<double> requiredAreas, Type spatialType)
         {
-            SpatialElements = spatialElements;
+            AchievedAreas = achievedAreas;
             RequiredAreas = requiredAreas;
+            SpatialType = spatialType;
         }
-        public List<SpatialElement> SpatialElements { get; }
-        public List<double> RequiredAreas { get; }
 
-        public List<double> AchievedAreas { get; set; }
+        public Type SpatialType { get; }
+        public List<double> RequiredAreas { get; } = [];
+
+        public List<double> AchievedAreas { get; private set; } = [];
+
+        public List<double> ClosestPassingAreas { get; } = [];
 
         public List<bool> ValidationResults { get; private set; } = [];
 
-        public ValidationAccuracy Accuracy { get; private set; }
+        public bool ValidationSuccess { get; private set; } = false;
 
-        public IEnumerable<Element> Bake(Document doc)
+        public string GetValidationReport()
         {
-            return null;
+            if (!this.ValidationSuccess)
+            {
+                StringBuilder sB = new StringBuilder();
+
+                for (int i = 0; i < this.AchievedAreas.Count; i++)
+                {
+                    var achievedArea = this.AchievedAreas[i];
+                    var passed = this.ValidationResults[i];
+
+                    if (passed)
+                        continue;
+
+                    string message = $"Error: Achieved Area is lesser than any of Required Areas.\n";
+                    sB.Append(message) ;
+                }
+
+                return sB.ToString();
+            }
+
+            return string.Empty;
+        }
+
+        public void Bake(Document doc)
+        {
         }
 
         public void Validate()
         {
-            this.AchievedAreas = this.SpatialElements
-                .Select(s => s.Area.ToUnit(UnitTypeId.SquareMeters))
-                .ToList();
+            try
+            {
+                this.SetClosestPassingArea(this.AchievedAreas, this.RequiredAreas);
 
-            this.SetClosestPassingArea(this.AchievedAreas,this.RequiredAreas);
+            }
+            catch (Exception)
+            {
+                this.ValidationSuccess = false;
+            }
 
-            Accuracy = ValidationAccuracy.Accurate;
         }
 
         private void SetClosestPassingArea(List<double> currentAreas,
@@ -62,6 +96,7 @@ namespace RevitCore.ResidentialApartments.Validation
                 if (closestPassingArea == double.MaxValue)
                 {
                     this.ValidationResults.Add(false);
+                    this.ClosestPassingAreas.Add(double.MaxValue);
                 }
                 else
                 {
@@ -70,15 +105,24 @@ namespace RevitCore.ResidentialApartments.Validation
                     requiredAreas = RemoveElement(requiredAreas, requiredArea);
 
                     this.ValidationResults.Add(true);
+                    this.ClosestPassingAreas.Add(closestPassingArea);
                 }
+            }
+
+            if (this.ValidationResults.Count > 0)
+            {
+                if (this.ValidationResults.Contains(false))
+                    this.ValidationSuccess = false;
+
             }
         }
 
-        private List<double> RemoveElement(List<double> array, double element)
+        private static List<double> RemoveElement(List<double> array, double element)
         {
             List<double> tempList = new List<double>(array);
             tempList.Remove(element);
-            return tempList.ToList();
+            return tempList;
         }
+
     }
 }

@@ -2,9 +2,14 @@
 {
     public interface ISpatialValidation
     {
-        public ValidationAccuracy Accuracy { get; }
+        public bool ValidationSuccess { get; }
+
         public void Validate();
 
-        public IEnumerable<Element> Bake(Document doc);
+        public void Bake(Document doc);
+
+        public string GetValidationReport();
+
+        public Type SpatialType { get; }
     }
 }

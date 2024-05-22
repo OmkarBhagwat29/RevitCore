@@ -11,17 +11,13 @@ namespace RevitCore.Extensions.DefinitionExt
             if(definitionGroup == null) throw new ArgumentNullException(nameof(definitionGroup));
             if(definitionConfigs==null) throw new ArgumentNullException(nameof(definitionConfigs));
 
-#if REVIT2022_OR_GREATER
             return definitionConfigs.Select(c => definitionGroup.CreateExternalDefinition(c.Name, c.TypeId)).ToList();
-#else
-            return definitionConfigs.Select(c => definitionGroup.CreateExternalDefinition(c.Name, c.ParameterType)).ToList();
-#endif
+
         }
 
         public static bool ContainsDefinition(this DefinitionGroup definitionGroup, string definitionName) =>
             definitionGroup.Definitions.Any(def => def.Name == definitionName);
 
-#if REVIT2022_OR_GREATER
 
         public static ExternalDefinition CreateExternalDefinition(this DefinitionGroup definitionGroup, string definitionName,
     ForgeTypeId forgeTypeId)
@@ -36,29 +32,39 @@ namespace RevitCore.Extensions.DefinitionExt
 
         }
 
-#else
-
-        public static ExternalDefinition CreateExternalDefinition(this DefinitionGroup definitionGroup, string definitionName,
-            ParameterType paramType)
-        {
-            if (definitionGroup == null) throw new ArgumentNullException(nameof(definitionGroup));
-            if (definitionName == null) throw new ArgumentNullException(nameof(definitionName));
-
-            if (definitionGroup.ContainsDefinition(definitionName))
-                throw new ArgumentNullException($"{definitionGroup.Name} group already contains definition {definitionName}");
-
-            return definitionGroup.Definitions.Create(new ExternalDefinitionCreationOptions(definitionName,paramType)) as ExternalDefinition;
-
-        }
-#endif
-
-        public static IEnumerable<(string groupName, string parameterName)> GetAllGroupParameters(this DefinitionGroup definitionGroup)
+        public static IEnumerable<(string groupName, string defName)> GetAllGroupParameters(this DefinitionGroup definitionGroup)
         {
             
             foreach (var definition in definitionGroup.Definitions)
             {
-               yield return (groupName: definitionGroup.Name, parameterName: definition.Name);
+               yield return (groupName:definitionGroup.Name,defName:definition.Name);
             }
+        }
+
+        public static Definition GetDefinitionInGroup(this DefinitionGroup definitionGroup,
+            string definitionName)
+        {
+
+            foreach (var definition in definitionGroup.Definitions)
+            {
+                if(definition.Name == definitionName)
+                    return definition;
+            }
+            return null;
+        }
+
+        public static ExternalDefinition GetOrCreateDefinitionInGroup(this DefinitionGroup definitionGroup,
+            string definitionName, ForgeTypeId dataTypeId)
+        {
+            if(dataTypeId==null)
+                throw new ArgumentNullException("Forge Type id is null here");
+
+            foreach (var definition in definitionGroup.Definitions)
+            {
+                if (definition.Name == definitionName)
+                    return definition as ExternalDefinition;
+            }
+            return definitionGroup.CreateExternalDefinition(definitionName,dataTypeId);
         }
 
     }

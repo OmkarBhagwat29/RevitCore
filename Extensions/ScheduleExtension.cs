@@ -5,10 +5,19 @@ namespace RevitCore.Extensions
     public static class ScheduleExtension
     {
         public static ViewSchedule CreateScheduleByCategory(this Document doc,BuiltInCategory category,
-            List<ElementId> parameters, string scheduleName = null)
+            List<ElementId> parameters, string scheduleName = null, ElementId areaSchemeId = null)
         {
+            ViewSchedule vs;
 
-            var vs = ViewSchedule.CreateSchedule(doc, new ElementId(category));
+            if (category != BuiltInCategory.OST_Areas)
+                vs = ViewSchedule.CreateSchedule(doc, new ElementId(category));
+            else
+            {
+                if (areaSchemeId == null)
+                    throw new ArgumentNullException("no area scheme provided");
+
+                vs = ViewSchedule.CreateSchedule(doc, new ElementId(category), areaSchemeId);
+            }
 
             doc.Regenerate();
 

@@ -10,6 +10,8 @@ namespace RevitCore.ResidentialApartments
         public string Name { get; set; }
         public string Description { get; set; }
 
+        public int Occupancy { get; set; }
+
         public abstract ApartmentType Type { get; }
 
         public Area AreaBoundary { get; set; }
@@ -17,33 +19,29 @@ namespace RevitCore.ResidentialApartments
 
         public List<ISpatialValidation> ApartmentValidationData { get; } = [];
 
-        public abstract void Validate();
-
-        public virtual List<Element> Bake(Document doc)
+        public virtual void Validate()
         {
-            var bakedElms = doc.UseTransaction(() =>
-            {
+            //apartment level validation
+            this.ApartmentValidationData.ForEach(d => d.Validate());
 
-                var elements = new List<Element>();
+            //room level validation
+            this.Rooms.ForEach(r => r.RoomValidationData.ForEach(d => d.Validate()));
+        }
+
+        public virtual void Bake(Document doc)
+        {
                 foreach (var apartment in ApartmentValidationData)
                 {
-                    var elms = apartment.Bake(doc).ToList();
-                    elements.AddRange(elms);
+                    apartment.Bake(doc);
                 }
 
                 foreach (var room in Rooms)
                 {
                     foreach (var validationData in room.RoomValidationData)
                     {
-                        var elms = validationData.Bake(doc).ToList();
-                        elements.AddRange(elms);
+                        validationData.Bake(doc);
                     }
                 }
-
-                return elements;
-            }, "Apartment Validation Data Baked");
-
-            return bakedElms;
         }
 
         public virtual void AddValidationData(ISpatialValidation apartmentValidation) => this.ApartmentValidationData.Add(apartmentValidation);

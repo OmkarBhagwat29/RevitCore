@@ -1,30 +1,39 @@
 ﻿
 
+using RevitCore.ResidentialApartments.Rooms;
+
 namespace RevitCore.ResidentialApartments.Validation
 {
-    public class CombinedAreaValidation(List<SpatialElement> spatialElements, double requiredArea) : ISpatialValidation
+    public class CombinedAreaValidation(List<double> achievedRoomAreas, double requiredArea, Type spatialType) : ISpatialValidation
     {
-        public ValidationAccuracy Accuracy { get; private set; }
-        public List<SpatialElement> SpatialElements { get; } = spatialElements;
+        public Type SpatialType { get { return spatialType; } }
+        public List<double> AchievedRoomAreas { get; } = achievedRoomAreas;
+
+        public double CombinedArea { get; private set; }
+
         public double RequiredArea { get; } = requiredArea;
-        public List<double> AchievedArea { get; private set; } = [];
         public bool ValidationSuccess { get; private set; }
 
-        public IEnumerable<Element> Bake(Document doc)
+        public void Bake(Document doc)
         {
-            return null;
+
+        }
+
+        public string GetValidationReport()
+        {
+            this.CombinedArea = this.AchievedRoomAreas.Sum();
+
+            if (this.CombinedArea < this.RequiredArea)
+                return $"Error: Achieved area is lesser than required area";
+
+            return string.Empty;
         }
 
         public void Validate()
         {
-            this.SpatialElements.ForEach(e => 
-            this.AchievedArea.Add(e.Area.ToUnit(UnitTypeId.SquareMeters)));
+            this.CombinedArea = this.AchievedRoomAreas.Sum();
 
-            var sum = this.AchievedArea.Sum();
-
-            this.Accuracy = ValidationAccuracy.Accurate;
-
-            this.ValidationSuccess = sum >= this.RequiredArea;
+            this.ValidationSuccess = Math.Round(this.CombinedArea,2) >= this.RequiredArea;
         }
     }
 }

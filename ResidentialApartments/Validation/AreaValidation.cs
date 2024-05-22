@@ -3,31 +3,43 @@ namespace RevitCore.ResidentialApartments.Validation
 {
     public class AreaValidation : ISpatialValidation
     {
-        public AreaValidation(SpatialElement spatialElement,
+        public AreaValidation(double achievedArea,
             double requiredArea)
         {
-            this.SpatialElement = spatialElement;
+            this.AchievedArea = achievedArea;
             RequiredArea = requiredArea;
         }
 
-        public SpatialElement SpatialElement { get; }
+        public Type SpatialType { get; }
         public double RequiredArea { get; }
         public double AchievedArea { get; private set; }
 
-        public ValidationAccuracy Accuracy { get; private set; }
+        public bool ValidationSuccess { get; private set; } = false;
 
-        public bool ValidationSuccess { get; private set; }
-
-        public IEnumerable<Element> Bake(Document doc)
+        public void Bake(Document doc)
         {
-            return null;
+
+        }
+
+        public string GetValidationReport()
+        {
+            if (this.AchievedArea < this.RequiredArea)
+                return "Error: Achieved area is lesser than required area.";
+
+            return string.Empty;
         }
 
         public void Validate()
         {
-            this.AchievedArea = this.SpatialElement.Area.ToUnit(UnitTypeId.SquareMeters);
-
             this.ValidationSuccess = this.AchievedArea >= this.RequiredArea;
+        }
+
+        public bool IsGreaterThan(double percentage)
+        {
+            double percentArea = (percentage / 100.0) * this.RequiredArea;
+            double difference = this.AchievedArea - percentArea;
+
+            return difference > this.RequiredArea;
         }
     }
 }

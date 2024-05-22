@@ -5,6 +5,8 @@ namespace RevitCore.Extensions.PointInPoly
 {
     public static class PointInPolyExtension
     {
+        
+
         /// <summary>
         /// Add new point to list, unless already present.
         /// </summary>
@@ -27,14 +29,16 @@ namespace RevitCore.Extensions.PointInPoly
         /// Return a list of boundary 
         /// points for the given room.
         /// </summary>
-        private static List<XYZ> GetBoundaryPointsOfRoom(
-          Room room)
+        public static List<XYZ> GetBoundaryPointsOfRoom(
+          this Room room, SpatialElementBoundaryOptions opt = null)
         {
-            SpatialElementBoundaryOptions opt
-              = new SpatialElementBoundaryOptions();
-
-            opt.SpatialElementBoundaryLocation
-              = SpatialElementBoundaryLocation.Center;
+            if (opt==null)
+            {
+                opt = new SpatialElementBoundaryOptions()
+                {
+                    SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Center
+                };
+            }
 
             var boundaries = room.GetBoundarySegments(
               opt);
@@ -79,6 +83,9 @@ namespace RevitCore.Extensions.PointInPoly
             var boundaries = area.GetBoundarySegments(
               opt);
 
+            if (boundaries == null || boundaries.Count == 0)
+                return null;
+
             return GetBoundaryPoints(boundaries);
         }
 
@@ -89,6 +96,10 @@ namespace RevitCore.Extensions.PointInPoly
         {
             bool ret = false;
             var p = GetBoundaryPointsOfArea(a);
+
+            if(p == null)
+                return false;
+
             PointInPoly pp = new PointInPoly();
             ret = pp.PolyGonContains(p, p1);
             return ret;

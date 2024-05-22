@@ -71,6 +71,9 @@ namespace RevitCore.ResidentialApartments
 
                 foreach (var room in rooms)
                 {
+                    if (room.Location == null)
+                        continue;
+
                     var roomLoc = room.Location as LocationPoint;
 
                     if (area.LevelId != room.LevelId)
@@ -81,7 +84,12 @@ namespace RevitCore.ResidentialApartments
                         apartmentRooms.Add(room as Room);
                     }
                 }
-                assList.Add(new AreaRoomAssociation(area, apartmentRooms));
+
+                if (apartmentRooms.Count > 0)
+                {
+                    assList.Add(new AreaRoomAssociation(area, apartmentRooms));
+                }
+
             }
 
             return assList;

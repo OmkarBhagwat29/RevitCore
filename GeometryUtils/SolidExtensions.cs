@@ -1,4 +1,5 @@
 ﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
 using RevitCore.Extensions;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,6 +56,23 @@ namespace RevitCore.GeometryUtils
                 .SelectMany(x => x.Tessellate()).ToList();
         }
 
+        public static Solid GetSolidFromSpatialElement(Document doc, SpatialElement element, SpatialElementBoundaryOptions sebOptions = null)
+        {
 
+            if (sebOptions == null)
+            {
+                sebOptions = new SpatialElementBoundaryOptions
+                {
+                    SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish,
+                };
+            }
+
+            SpatialElementGeometryCalculator cal = new SpatialElementGeometryCalculator(doc, sebOptions);
+            SpatialElementGeometryResults results = cal.CalculateSpatialElementGeometry(element);
+            Solid roomSolid = results.GetGeometry();
+
+            return roomSolid;
+        }
     }
+
 }

@@ -1,50 +1,127 @@
 ﻿
+using Autodesk.Revit.DB.Architecture;
+using RevitCore.Extensions;
+using RevitCore.Extensions.PointInPoly;
 using RevitCore.GeometryUtils;
+using RevitCore.GeometryUtils.BoundingBox;
+using RevitCore.ResidentialApartments.Rooms;
+using System.Text;
+
 
 namespace RevitCore.ResidentialApartments.Validation
 {
     public class DimensionValidation : ISpatialValidation
     {
-        public DimensionValidation(SpatialElement spatialElement,
-            double requiredMinWidth)
+        public DimensionValidation(Solid spatialElementSolid, List<XYZ> solidBasePoints,
+            double requiredMinWidth, Type spatialType)
         {
-            this.SpatialElement = spatialElement;
+            this.RoomSolid = spatialElementSolid;
+            SolidBasePoints = solidBasePoints;
             RequiredMinWidth = requiredMinWidth;
-            //AchievedMinWidth = achievedMinWidth;
+            SpatialType = spatialType;
         }
-        public SpatialElement SpatialElement { get; }
 
+        public DimensionValidation(double _achievedWidth, double requiredWidth, Type spatialType)
+        {
+            this.AchievedMinWidth = _achievedWidth;
+            this.RequiredMinWidth = requiredWidth;
+            this.SpatialType = spatialType;
+        }
+
+        public Type SpatialType { get; }
+
+        public Solid RoomSolid { get; }
+        public List<XYZ> SolidBasePoints { get; }
+        public string ApartmentNumber { get; }
         public double RequiredMinWidth { get; }
-        public double AchievedMinWidth { get; private set; }
+        public double AchievedMinWidth { get; private set; } = -1;
+
+        public List<Solid> PartitionSolids { get; private set; } = [];
 
         public bool ValidationSuccess { get; private set; } = false;
 
-        public ValidationAccuracy Accuracy { get; private set; }
+        public Solid ResultSolid { get; private set; }
 
-        public IEnumerable<Element> Bake(Document doc)
+        public void Bake(Document doc)
         {
-            return null;
+            if (this.ResultSolid == null && this.RoomSolid!=null)
+            {
+               this.RoomSolid.Visualize(doc);
+
+                return;
+            }
+
+            this.PartitionSolids.ForEach(s=> s.Visualize(doc));
+        }
+
+        public string GetValidationReport()
+        {
+            StringBuilder report = new StringBuilder();
+
+            if (this.ValidationSuccess)
+            {
+                return string.Empty;
+            }
+
+            if (this.ResultSolid == null)
+            {
+                string message = $"Error: Unable to Partition the room for checking minimum width requirement." +
+                    $" Please check Room Boundary. Room Shall be closed and should not be self intersecting.";
+
+                report.AppendLine(message);
+            }
+            else if (this.ResultSolid != null && this.RequiredMinWidth > this.AchievedMinWidth)
+            {
+                string message = $"Error: Required width is greater than achieved width.";
+                
+                report.AppendLine(message);
+            }
+
+            return report.ToString();
         }
 
         public void Validate()
         {
+            if (this.AchievedMinWidth != -1)
+            {
+                //user set min width from input
 
-            var bbx = this.SpatialElement.get_BoundingBox(this.SpatialElement.Document.ActiveView);
-            if(bbx == null) return; 
-            var advanceBbx = bbx.ToAdvanced();
+                this.ValidationSuccess = this.AchievedMinWidth >= this.RequiredMinWidth;
 
-            var length = advanceBbx.Length.ToMeters();
-            var width = advanceBbx.Width.ToMeters();
-            var bbxArea = length * width;
-            var roomArea = this.SpatialElement.Area.ToUnit(UnitTypeId.SquareMeters);
-            if (bbxArea == roomArea)
-                this.Accuracy = ValidationAccuracy.Accurate;
-            else
-                this.Accuracy = ValidationAccuracy.Not_Accurate;
+                return;
+            }
 
-            this.AchievedMinWidth = length < width ? length : width;
+            try
+            {
+                //compute room solid
+                //this.RoomData.ComputeRoomSolid(doc, sebOptions);
 
-            this.ValidationSuccess = this.AchievedMinWidth >= this.RequiredMinWidth;
+                if (this.RoomSolid == null)
+                    return;
+
+                var boundaryPoints = new List<XYZ>(this.SolidBasePoints);
+
+                var partitionPoints = this.RoomSolid.PartitionRoom(boundaryPoints, out List<Solid> partitionSolids);
+
+                if (partitionSolids == null || partitionSolids.Count == 0)
+                    return;
+
+                this.PartitionSolids = partitionSolids.OrderByDescending(p => p.SurfaceArea).ToList();
+                this.ResultSolid = PartitionSolids.First();
+
+                var bbx = this.ResultSolid.GetBoundingBox().ToAdvanced();
+
+                this.AchievedMinWidth = bbx.Width < bbx.Length ? bbx.Width.ToMeters() : bbx.Length.ToMeters();
+
+                this.ValidationSuccess = this.AchievedMinWidth >= this.RequiredMinWidth;
+
+            }
+            catch (Exception)
+            {
+
+                return;
+            }
+
         }
     }
 }
