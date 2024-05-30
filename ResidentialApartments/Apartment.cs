@@ -5,19 +5,30 @@ using RevitCore.ResidentialApartments.Validation;
 
 namespace RevitCore.ResidentialApartments
 {
+
     public abstract class Apartment
     {
+
         public string Name { get; set; }
+
+
         public string Description { get; set; }
+
 
         public int Occupancy { get; set; }
 
+
         public abstract ApartmentType Type { get; }
 
+
         public Area AreaBoundary { get; set; }
+
+
         public List<RoomBase> Rooms { get; } = [];
 
+
         public List<ISpatialValidation> ApartmentValidationData { get; } = [];
+
 
         public virtual void Validate()
         {
@@ -25,8 +36,22 @@ namespace RevitCore.ResidentialApartments
             this.ApartmentValidationData.ForEach(d => d.Validate());
 
             //room level validation
-            this.Rooms.ForEach(r => r.RoomValidationData.ForEach(d => d.Validate()));
+            Int64 i = 778065;
+            foreach (var rm in this.Rooms)
+            {
+                foreach (var vD in rm.RoomValidationData)
+                {
+                    //if (rm.Room.Id == new ElementId(i))
+                    //{
+                    //    vD.Validate();
+                    //}
+
+                   vD.Validate();
+
+                }
+            }
         }
+
 
         public virtual void Bake(Document doc)
         {

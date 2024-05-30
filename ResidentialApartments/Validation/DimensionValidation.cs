@@ -19,14 +19,11 @@ namespace RevitCore.ResidentialApartments.Validation
             SolidBasePoints = solidBasePoints;
             RequiredMinWidth = requiredMinWidth;
             SpatialType = spatialType;
+            _isRectilinear = solidBasePoints.IsPolygonRectilinear();
         }
 
-        public DimensionValidation(double _achievedWidth, double requiredWidth, Type spatialType)
-        {
-            this.AchievedMinWidth = _achievedWidth;
-            this.RequiredMinWidth = requiredWidth;
-            this.SpatialType = spatialType;
-        }
+
+        bool _isRectilinear = false;
 
         public Type SpatialType { get; }
 
@@ -63,17 +60,20 @@ namespace RevitCore.ResidentialApartments.Validation
                 return string.Empty;
             }
 
-            if (this.ResultSolid == null)
+            if (!_isRectilinear)
             {
-                string message = $"Error: Unable to Partition the room for checking minimum width requirement." +
-                    $" Please check Room Boundary. Room Shall be closed and should not be self intersecting.";
+                report.Append($"Error: Room boundary is not a Rectilinear Polygon.");
+            }
+            else if(this.ResultSolid == null)
+            {
+                string message = $"Please check Room Boundary. Room Shall be closed, should not be self intersecting.";
 
                 report.AppendLine(message);
             }
             else if (this.ResultSolid != null && this.RequiredMinWidth > this.AchievedMinWidth)
             {
-                string message = $"Error: Required width is greater than achieved width.";
-                
+                string message = message = $"Error: Required width is greater than achieved width.";
+
                 report.AppendLine(message);
             }
 
@@ -82,19 +82,10 @@ namespace RevitCore.ResidentialApartments.Validation
 
         public void Validate()
         {
-            if (this.AchievedMinWidth != -1)
-            {
-                //user set min width from input
-
-                this.ValidationSuccess = this.AchievedMinWidth >= this.RequiredMinWidth;
-
+            if (!_isRectilinear)
                 return;
-            }
-
             try
             {
-                //compute room solid
-                //this.RoomData.ComputeRoomSolid(doc, sebOptions);
 
                 if (this.RoomSolid == null)
                     return;

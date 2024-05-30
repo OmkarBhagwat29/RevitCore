@@ -27,13 +27,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="ClosedXML" Version="0.102.2" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" Condition="$(RevitVersion) != '2025'" />
         <PackageReference Include="Nice3point.Revit.Build.Tasks" Version="1.*" />
         <PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*" />
         <PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*" />
         <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
         <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
-        <PackageReference Include="QuikGraph" Version="2.5.0" />
 	</ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Keynotes\" />
+    </ItemGroup>
 	
 	</Project>

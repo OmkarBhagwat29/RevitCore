@@ -75,6 +75,7 @@ namespace RevitCore.Extensions
                 .Where(e => validate(e));
         }
 
+
         public static IEnumerable<Element> GetElements(this Document doc, params Type[] types)
         {
             if (!types.Any())

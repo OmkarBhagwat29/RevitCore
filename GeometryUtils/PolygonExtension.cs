@@ -133,6 +133,31 @@ namespace RevitCore.GeometryUtils
             }
         }
 
+        public static bool IsPolygonRectilinear(this List<XYZ> _vertices)
+        {
+
+            for (int i = 0; i < _vertices.Count; i++)
+            {
+                int vertexIndexToCheck = i;
+
+                var vertex = _vertices[vertexIndexToCheck];
+
+                int prevIndex = (vertexIndexToCheck - 1 + _vertices.Count) % _vertices.Count;
+                int nextIndex = (vertexIndexToCheck + 1) % _vertices.Count;
+
+                XYZ prevVec = _vertices[vertexIndexToCheck] - _vertices[prevIndex];
+                XYZ nextVec = _vertices[nextIndex] - _vertices[vertexIndexToCheck];
+
+                double dot = prevVec.DotProduct(nextVec);
+
+                if (!dot.IsAlmostEqual(0.0))
+                    return false;
+            }
+
+            return true;
+
+        }
+
 
         public static List<XYZ> RemoveCollinearVertices(this List<XYZ> vertices)
         {
@@ -156,6 +181,8 @@ namespace RevitCore.GeometryUtils
             return result;
         }
 
+
+
         public static ((int startIndex, int endIndex)firstChord, (int startIndex, int endIndex)lastChord)
             GetRectilinearPolygonAdjacent(this (int startIndex, int endIndex) chordPoints, int verticesCount)
         {
@@ -174,6 +201,7 @@ namespace RevitCore.GeometryUtils
             return (firstChord,lastChord);
         }
 
+
         public static (int startIndex, int endIndex) GetSmallestChord(this List<XYZ> _vertices, (int startIndex, int endIndex) chord1,
             (int startIndex, int endIndex) chord2)
         {
@@ -189,6 +217,7 @@ namespace RevitCore.GeometryUtils
 
             return chord_1_Distance <= chord_2_Distance ? chord1 : chord2;
         }
+
 
         public static List<XYZ> CreateRectangularPartition(List<XYZ>_vertices, 
             (int startIndex, int endIndex) mainChord,
@@ -220,6 +249,7 @@ namespace RevitCore.GeometryUtils
             return rectangularPartition;
         }
 
+
         public static List<XYZ> CreateNewRegion(this Solid currentRoomSolid, List<XYZ> rectangularPartition,
             out Solid modifiedSolid, out Solid rectangularRegionSolid)
         {
@@ -243,6 +273,8 @@ namespace RevitCore.GeometryUtils
 
             modifiedSolid = BooleanOperationsUtils.ExecuteBooleanOperation(currentRoomSolid, rectangularRegionSolid, BooleanOperationsType.Difference);
 
+            if (modifiedSolid.Faces.Size == 0)
+                modifiedSolid = rectangularRegionSolid;
    
             var newLoop = modifiedSolid.GetFaces()[1].GetEdgesAsCurveLoops().ToArray().FirstOrDefault().ToList();
 
@@ -254,6 +286,7 @@ namespace RevitCore.GeometryUtils
 
                 newVertices.Add(ln.GetEndPoint(0));
             }
+
             //close the polygon
             newVertices.Add(newVertices[0]);
 
@@ -261,6 +294,7 @@ namespace RevitCore.GeometryUtils
             return newVertices;
 
         }
+
 
         public static List<List<XYZ>> PartitionRoom(this Solid roomSolid,List<XYZ>roomBoundaryPoints,
             out List<Solid> partitionSolids)
@@ -278,6 +312,7 @@ namespace RevitCore.GeometryUtils
                 {
                     while (roomSolid.Faces.Size != 6 && counter < 10)
                     {
+                        
                         if (roomBoundaryPoints.IsPolygonClosed())
                         {
                             if (roomBoundaryPoints.IsPolygonClockwise())
@@ -285,6 +320,8 @@ namespace RevitCore.GeometryUtils
                                 roomBoundaryPoints.Reverse();
                             }
                         }
+
+                        roomBoundaryPoints = roomBoundaryPoints.RemoveCollinearVertices();
 
                         //remove last point as it matches to first
                         if (roomBoundaryPoints.First().IsAlmostEqualTo(roomBoundaryPoints.Last()))
@@ -351,6 +388,7 @@ namespace RevitCore.GeometryUtils
 
             return partitions;
         }
+
 
     }
 }
