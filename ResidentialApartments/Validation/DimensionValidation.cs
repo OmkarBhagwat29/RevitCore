@@ -19,7 +19,11 @@ namespace RevitCore.ResidentialApartments.Validation
             SolidBasePoints = solidBasePoints;
             RequiredMinWidth = requiredMinWidth;
             SpatialType = spatialType;
-            _isRectilinear = solidBasePoints.IsPolygonRectilinear();
+            if (this.RoomSolid != null)
+            {
+                _isRectilinear = solidBasePoints.IsPolygonRectilinear();
+            }
+
         }
 
 
@@ -62,13 +66,7 @@ namespace RevitCore.ResidentialApartments.Validation
 
             if (!_isRectilinear)
             {
-                report.Append($"Error: Room boundary is not a Rectilinear Polygon.");
-            }
-            else if(this.ResultSolid == null)
-            {
-                string message = $"Please check Room Boundary. Room Shall be closed, should not be self intersecting.";
-
-                report.AppendLine(message);
+                report.Append($"Error: Room boundary is not a Rectilinear Polygon or it is self intersecting.");
             }
             else if (this.ResultSolid != null && this.RequiredMinWidth > this.AchievedMinWidth)
             {

@@ -22,7 +22,6 @@ namespace RevitCore.Extensions
     GeometryObject geometryObject,
     BuiltInCategory builtInCategory = BuiltInCategory.OST_GenericModel)
         {
-
             var directShape = DirectShape.CreateElement(document, new ElementId(builtInCategory));
             directShape.SetShape(new List<GeometryObject>() { geometryObject });
             return directShape;

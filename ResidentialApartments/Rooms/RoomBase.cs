@@ -43,6 +43,7 @@ namespace RevitCore.ResidentialApartments.Rooms
                 }
 
                 bool open = curveLoop.IsOpen();
+                var len = curveLoop.GetExactLength();
 
                 if (!curveLoop.IsValidObject || open)
                     return null;
@@ -53,7 +54,11 @@ namespace RevitCore.ResidentialApartments.Rooms
                 // Create a solid from the profile by extruding
                 SolidOptions solidOptions = new SolidOptions(ElementId.InvalidElementId, ElementId.InvalidElementId);
 
-                return GeometryCreationUtilities.CreateExtrusionGeometry(profile, XYZ.BasisZ, 20);
+                var geom = GeometryCreationUtilities.CreateExtrusionGeometry(profile, XYZ.BasisZ, 20, solidOptions);
+
+              
+
+                return geom;
             }
             catch (Exception)
             {
