@@ -4,11 +4,14 @@ namespace RevitCore.ResidentialApartments.Validation
     public class AreaValidation : ISpatialValidation
     {
         public AreaValidation(double achievedArea,
-            double requiredArea)
+            double requiredArea, bool checkForAreaGreater = false)
         {
             this.AchievedArea = achievedArea;
-            RequiredArea = requiredArea;
+            this.RequiredArea = requiredArea;
+            this.CheckForRequiredAreaGreater = checkForAreaGreater;
         }
+
+        public bool CheckForRequiredAreaGreater { get; }
 
         public Type SpatialType { get; }
         public double RequiredArea { get; }
@@ -23,15 +26,31 @@ namespace RevitCore.ResidentialApartments.Validation
 
         public string GetValidationReport()
         {
-            if (this.AchievedArea < this.RequiredArea)
-                return "Error: Achieved area is lesser than required area.";
+            if (!this.CheckForRequiredAreaGreater)
+            {
+                if (!this.ValidationSuccess)
+                    return "Error: Achieved area is lesser than required area.";
+            }
+            else
+            {
+                if (!this.ValidationSuccess)
+                    return "Error: Achieved area can not be greater than required area.";
+            }
+           
 
             return string.Empty;
         }
 
         public void Validate()
         {
-            this.ValidationSuccess = this.AchievedArea >= this.RequiredArea;
+            if (!this.CheckForRequiredAreaGreater)
+            {
+                this.ValidationSuccess = this.AchievedArea >= this.RequiredArea;
+            }
+            else
+            {
+                this.ValidationSuccess = this.AchievedArea < this.RequiredArea;
+            }
         }
 
         public bool IsGreaterThan(double percentage)

@@ -72,13 +72,16 @@ namespace RevitCore.Extensions.PointInPoly
         /// points for the given area.
         /// </summary>
         private static List<XYZ> GetBoundaryPointsOfArea(
-          Area area)
+          Area area, SpatialElementBoundaryOptions opt = null)
         {
-            SpatialElementBoundaryOptions opt
-              = new SpatialElementBoundaryOptions();
+            if (opt == null)
+            {
+                opt = new SpatialElementBoundaryOptions();
 
-            opt.SpatialElementBoundaryLocation
-              = SpatialElementBoundaryLocation.Center;
+                opt.SpatialElementBoundaryLocation
+                  = SpatialElementBoundaryLocation.Center;
+            }
+
 
             var boundaries = area.GetBoundarySegments(
               opt);
@@ -92,10 +95,10 @@ namespace RevitCore.Extensions.PointInPoly
         /// <summary>
         /// Check whether this area contains a given point.
         /// </summary>
-        public static bool AreaContains(this Area a, XYZ p1)
+        public static bool AreaContains(this Area a, XYZ p1, SpatialElementBoundaryOptions opt = null)
         {
             bool ret = false;
-            var p = GetBoundaryPointsOfArea(a);
+            var p = GetBoundaryPointsOfArea(a, opt);
 
             if(p == null)
                 return false;
@@ -108,10 +111,10 @@ namespace RevitCore.Extensions.PointInPoly
         /// <summary>
         /// Check whether this room contains a given point.
         /// </summary>
-        public static bool RoomContains(this Room r, XYZ p1)
+        public static bool RoomContains(this Room r, XYZ p1, SpatialElementBoundaryOptions opt = null)
         {
             bool ret = false;
-            var p = GetBoundaryPointsOfRoom(r);
+            var p = GetBoundaryPointsOfRoom(r,opt);
             PointInPoly pp = new PointInPoly();
             ret = pp.PolyGonContains(p, p1);
             return ret;

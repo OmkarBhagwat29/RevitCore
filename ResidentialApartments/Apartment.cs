@@ -26,32 +26,25 @@ namespace RevitCore.ResidentialApartments
 
         public List<RoomBase> Rooms { get; } = [];
 
+        public  List<FamilyInstance> ApartmentElements { get; } = [];
+
 
         public List<ISpatialValidation> ApartmentValidationData { get; } = [];
-
 
         public virtual void Validate()
         {
             //apartment level validation
             this.ApartmentValidationData.ForEach(d => d.Validate());
 
-            //room level validation
-            Int64 i = 778065;
+
             foreach (var rm in this.Rooms)
             {
                 foreach (var vD in rm.RoomValidationData)
                 {
-                    //if (rm.Room.Id == new ElementId(i))
-                    //{
-                    //    vD.Validate();
-                    //}
-
                    vD.Validate();
-
                 }
             }
         }
-
 
         public virtual void Bake(Document doc)
         {
@@ -87,5 +80,7 @@ namespace RevitCore.ResidentialApartments
         {
             return find(this.Rooms);
         }
+
+
     }
 }

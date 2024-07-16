@@ -4,6 +4,7 @@ using RevitCore.Extensions;
 using RevitCore.Extensions.PointInPoly;
 using RevitCore.GeometryUtils;
 using RevitCore.ResidentialApartments.Validation;
+using System.Windows.Controls;
 
 namespace RevitCore.ResidentialApartments.Rooms
 {
@@ -15,13 +16,17 @@ namespace RevitCore.ResidentialApartments.Rooms
         public double MinimumArea { get; set; }
         public double MinimumWidth { get; set; }
 
-        public ElementId RevitRoomElementId { get; }
-
         public abstract Room Room { get; }
+
+        public List<ElementId> DoorIds { get; } = [];
+
+        public List<ElementId> WindowIds { get; } = [];
+
 
         public List<ISpatialValidation> RoomValidationData { get; private set; } = [];
 
         public virtual void AddValidationData(ISpatialValidation apartmentValidation) => this.RoomValidationData.Add(apartmentValidation);
+
 
         public Solid ComputeRoomSolid(SpatialElementBoundaryOptions options, out List<XYZ> roomBoundaryPoints)
         {
