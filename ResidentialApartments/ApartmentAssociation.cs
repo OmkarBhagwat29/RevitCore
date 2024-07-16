@@ -164,7 +164,11 @@ namespace RevitCore.ResidentialApartments
                 {
                     if (e.LevelId == null)
                         return false;
+#if REVIT2022
+                    return (BuiltInCategory)e.Category.Id.IntegerValue == BuiltInCategory.OST_Doors;
+#else
                     return e.Category.BuiltInCategory == BuiltInCategory.OST_Doors;
+#endif
                 });
 
 
@@ -189,7 +193,12 @@ namespace RevitCore.ResidentialApartments
                 {
                     if (e.LevelId == null)
                         return false;
+
+#if REVIT2022
+                    return (BuiltInCategory)e.Category.Id.IntegerValue == BuiltInCategory.OST_Windows;
+#else
                     return e.Category.BuiltInCategory == BuiltInCategory.OST_Windows;
+#endif
                 });
 
 
