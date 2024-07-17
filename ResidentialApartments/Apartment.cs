@@ -81,6 +81,21 @@ namespace RevitCore.ResidentialApartments
             return find(this.Rooms);
         }
 
+        public List<FamilyInstance> GetSpecificEntities(Category category)
+        {
+            return this.ApartmentElements.Where(e=>e.Category == category).ToList();
+        }
+
+        public List<FamilyInstance> GetSpecificEntities(BuiltInCategory category)
+        {
+#if REVIT2022
+            return this.ApartmentElements.Where(e => (BuiltInCategory)e.Category.Id.IntegerValue == category).ToList(); 
+#else
+            return this.ApartmentElements.Where(e => e.Category.BuiltInCategory == category).ToList();
+#endif
+
+
+        }
 
     }
 }
