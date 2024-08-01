@@ -61,8 +61,6 @@ namespace RevitCore.ResidentialApartments.Rooms
 
                 var geom = GeometryCreationUtilities.CreateExtrusionGeometry(profile, XYZ.BasisZ, 20, solidOptions);
 
-              
-
                 return geom;
             }
             catch (Exception)
@@ -92,5 +90,42 @@ namespace RevitCore.ResidentialApartments.Rooms
             return baseVertices;
 
         }
+
+        public bool IsElementInsideRoom(
+    FamilyInstance element, double brickTolerance = 1.64042) //brick tolerance in feet
+        {
+            if (element.Location == null)
+                return false;
+
+            var loc = element.Location as LocationPoint;
+
+            if (loc == null) return false;
+
+            var pCenter = loc.Point;
+            
+            var pY_pos = loc.Point + (XYZ.BasisY * brickTolerance);
+            var pY_neg = loc.Point - (XYZ.BasisY * brickTolerance);
+
+            var pX_pos = loc.Point + (XYZ.BasisX * brickTolerance);
+            var pX_neg = loc.Point - (XYZ.BasisX * brickTolerance);
+
+            if (this.Room.IsPointInRoom(pCenter))
+                return true;
+
+            if (this.Room.IsPointInRoom(pY_pos))
+                return true;
+
+            if (this.Room.IsPointInRoom(pY_neg))
+                return true;
+
+            if (this.Room.IsPointInRoom(pX_pos))
+                return true;
+
+            if (this.Room.IsPointInRoom(pX_neg))
+                return true;
+
+            return false;
+        }
+
     }
 }

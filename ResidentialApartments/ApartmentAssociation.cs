@@ -4,6 +4,7 @@ using Autodesk.Revit.UI;
 using RevitCore.Extensions;
 using RevitCore.Extensions.PointInPoly;
 using RevitCore.Extensions.Selection;
+using RevitCore.GeometryUtils;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
@@ -16,7 +17,8 @@ namespace RevitCore.ResidentialApartments
     {
         //public static Document Doc;
 
-        public ApartmentAssociation(Area areaBoundary, List<Room>rooms) {
+        public ApartmentAssociation(Area areaBoundary, List<Room> rooms)
+        {
             AreaBoundary = areaBoundary;
             Rooms = rooms;
         }
@@ -31,7 +33,7 @@ namespace RevitCore.ResidentialApartments
                 PickElementOptionFactory.CreateCurrentDocumentOption());
 
             //distinguish 
-            var areas = areaRoomElements.Where(e=>e.GetType()==typeof(Area))
+            var areas = areaRoomElements.Where(e => e.GetType() == typeof(Area))
                 .Cast<Area>()
                 .ToList();
 
@@ -47,107 +49,82 @@ namespace RevitCore.ResidentialApartments
         }
 
         public static List<ApartmentAssociation> GetAreaRoomAssociationInProject(UIApplication uiApp,
-            Func<Area,bool>AreaPassCondition)
+            Func<Area, bool> AreaPassCondition)
         {
             //get all the spatial elements
             var doc = uiApp.ActiveUIDocument.Document;
-            var elements = doc.GetElements<SpatialElement>().ToList();
+            var elements = new List<SpatialElement>();//doc.GetElements<SpatialElement>().ToList();
 
             foreach (Document linkedDoc in uiApp.Application.Documents)
             {
-                if (linkedDoc.PathName == doc.PathName || !linkedDoc.IsValidObject)
-                    continue;
 
-                    var spatialElements = linkedDoc.GetElements<SpatialElement>().ToList();
+                var spatialElements = linkedDoc.GetElements<SpatialElement>().ToList();
 
-                    if (spatialElements.Count > 0)
-                    {
-                        elements.AddRange(spatialElements);
-                    }
+                if (spatialElements.Count > 0)
+                {
+                    elements.AddRange(spatialElements);
+                }
 
             }
 
             //get only areas
             var areas = elements.Where(e => e is Area).Cast<Area>()
                 .Where(AreaPassCondition)
-                .GroupBy(a => a.LevelId)
+                .OrderBy(e => e.Level.Elevation)
                 .ToList();
 
             //get only rooms
             var rooms = elements.Where(e => e is Room)
                 .Cast<Room>()
                 .Where(r => r.Location != null)
-                .GroupBy(s => s.LevelId)
+                .OrderBy(r => r.Level.Elevation)
                 .ToList();
 
             //get all rooms for each areas and create data
             List<ApartmentAssociation> assList = [];
 
-            foreach (IGrouping < ElementId, Area > areaData in areas)
+            foreach (var areaBoundary in areas)
             {
-                foreach (var areaBoundary in areaData)
+                List<Room> apartmentRooms = [];
+
+                var areaSolid = areaBoundary.GetSolidFromAreaBoundary(5, new SpatialElementBoundaryOptions
+                    ()
                 {
-                    bool roomsOnSameLevel = false;
-                    List<Room> apartmentRooms = [];
-                    foreach (IGrouping<ElementId, Room> roomData in rooms)
+                    SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Center
+                });
+
+                if (areaSolid == null)
+                {
+                    continue;
+                }
+
+                foreach (var room in rooms)
+                {
+                    var lp = room.Location as LocationPoint;
+
+                    bool intersects = areaSolid.IntersectsWithElement(lp.Point,0.1);
+
+                    if (intersects)
                     {
-                        foreach (var room in roomData)
-                        {
-                            if (areaBoundary.LevelId != room.LevelId)
-                            {
-                                var areaLevel = areaBoundary.Document.GetElement(areaBoundary.LevelId) as Level;
-                                var roomLevel = room.Document.GetElement(room.LevelId) as Level;
-
-                                var areaElevation = areaLevel.LookupParameter("Elevation").AsDouble();
-                                var roomElevation = roomLevel.LookupParameter("Elevation").AsDouble();
-
-                                if (!areaElevation.IsAlmostEqual(roomElevation))
-                                {
-                                    var diff = 0.82021; //this is feet = 250 mm
-
-                                    var roomElevPos = roomElevation + diff;
-
-                                    if (!areaElevation.IsAlmostEqual(roomElevPos))
-                                    {
-                                        var roomElevNeg = roomElevation - diff;
-
-                                        if (!areaElevation.IsAlmostEqual(roomElevNeg))
-                                        {
-                                            break;
-                                        }
-                                    }
-
-                                }
-                            }
-
-                            roomsOnSameLevel = true;
-                            break;
-                        }
-
-                        if (!roomsOnSameLevel)
-                        {
-                            continue;
-                        }
-
-                        foreach (var room in roomData)
-                        {
-                            var roomLoc = room.Location as LocationPoint;
-
-                            if (areaBoundary.AreaContains(roomLoc.Point))
-                            {
-                                apartmentRooms.Add(room);
-                            }
-                        }
-
-                        roomsOnSameLevel = false;
-                    }
-
-                    if (apartmentRooms.Count > 0)
-                    {
-                        assList.Add(new ApartmentAssociation(areaBoundary, apartmentRooms));
+                        apartmentRooms.Add(room);
                     }
                 }
 
+                if (apartmentRooms.Count > 0)
+                {
+                    assList.Add(new ApartmentAssociation(areaBoundary, apartmentRooms));
+
+                    apartmentRooms.ForEach(r => { 
+                    
+                        var index =  rooms.IndexOf(r);
+
+                        if (index != -1)
+                        {
+                            rooms.RemoveAt(index);
+                        }
+
+                    });
+                }
             }
 
             return assList;
@@ -155,8 +132,8 @@ namespace RevitCore.ResidentialApartments
 
         public static List<FamilyInstance> GetDoors(UIApplication uiApp)
         {
-           // var doc = uiApp.ActiveUIDocument.Document;
-           var doors = new List<FamilyInstance>();  
+            // var doc = uiApp.ActiveUIDocument.Document;
+            var doors = new List<FamilyInstance>();
             foreach (Document doc in uiApp.Application.Documents)
             {
 
@@ -174,7 +151,7 @@ namespace RevitCore.ResidentialApartments
 
                 if (fis.Count() > 0)
                 {
-                    doors.AddRange(fis);    
+                    doors.AddRange(fis);
                 }
 
             }

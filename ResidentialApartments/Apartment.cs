@@ -1,4 +1,6 @@
-﻿using RevitCore.Extensions;
+﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
+using RevitCore.Extensions;
 using RevitCore.ResidentialApartments.Rooms;
 using RevitCore.ResidentialApartments.Validation;
 
@@ -23,11 +25,12 @@ namespace RevitCore.ResidentialApartments
 
         public Area AreaBoundary { get; set; }
 
+        //public Solid ApartmentSolid { get; set; }
+
 
         public List<RoomBase> Rooms { get; } = [];
 
-        public  List<FamilyInstance> ApartmentElements { get; } = [];
-
+        public  List<Element> ApartmentElements { get; } = [];
 
         public List<ISpatialValidation> ApartmentValidationData { get; } = [];
 
@@ -83,18 +86,56 @@ namespace RevitCore.ResidentialApartments
 
         public List<FamilyInstance> GetSpecificEntities(Category category)
         {
-            return this.ApartmentElements.Where(e=>e.Category == category).ToList();
+            return this.ApartmentElements.Cast<FamilyInstance>().Where(e=>e.Category == category).ToList();
         }
 
         public List<FamilyInstance> GetSpecificEntities(BuiltInCategory category)
         {
 #if REVIT2022
-            return this.ApartmentElements.Where(e => (BuiltInCategory)e.Category.Id.IntegerValue == category).ToList(); 
+            return this.ApartmentElements.Cast<FamilyInstance>().Where(e => (BuiltInCategory)e.Category.Id.IntegerValue == category).ToList(); 
 #else
-            return this.ApartmentElements.Where(e => e.Category.BuiltInCategory == category).ToList();
+            return this.ApartmentElements.Cast<FamilyInstance>().Where(e => e.Category.BuiltInCategory == category).ToList();
 #endif
+        }
 
 
+        public bool IsWindowAssociatedToApartment(
+            FamilyInstance element, double brickTolerance = 1.64042) //brick tolerance in feet
+        {
+            if (element.Location == null)
+                return false;
+
+            var loc = element.Location as LocationPoint;
+
+            if (loc == null) return false;
+
+            var areaBoundarySegments = this.AreaBoundary.GetBoundarySegments(new SpatialElementBoundaryOptions()
+            { SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Center });
+
+            double min = double.MaxValue;
+            double requiredDistance = double.MaxValue;
+            foreach (var segments in areaBoundarySegments)
+            {
+                foreach (var seg in segments)
+                {
+                    var cV = seg.GetCurve();
+
+                    if (cV == null)
+                        continue;
+
+                    requiredDistance = cV.Distance(loc.Point);
+
+                    if (requiredDistance < min)
+                    {
+                        min = requiredDistance;
+
+                        if (requiredDistance <= brickTolerance)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
     }
