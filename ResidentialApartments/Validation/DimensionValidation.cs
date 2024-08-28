@@ -102,7 +102,7 @@ namespace RevitCore.ResidentialApartments.Validation
 
                 this.AchievedMinWidth = bbx.Width < bbx.Length ? bbx.Width.ToMeters() : bbx.Length.ToMeters();
 
-                this.ValidationSuccess = this.AchievedMinWidth >= this.RequiredMinWidth;
+                this.ValidationSuccess = Math.Round(this.AchievedMinWidth,4) >= this.RequiredMinWidth;
 
             }
             catch (Exception)
