@@ -18,14 +18,14 @@ namespace RevitCore.Utils
 #if !NET48
         public static JsonSerializerOptions GetDefaultOptions() => new JsonSerializerOptions()
         {
-            IgnoreNullValues = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             AllowTrailingCommas = true,
             WriteIndented = true
         };
 
-        public static T FromJsonTo<T>(string json, JsonSerializerOptions? options = null)
+        public static T FromJsonTo<T>(string json, JsonSerializerOptions options = null)
         {
             if (options == null)
                 options = GetDefaultOptions();
@@ -39,7 +39,7 @@ namespace RevitCore.Utils
             }
         }
 
-        public static string ToJson<T>(T obj, JsonSerializerOptions? options = null)
+        public static string ToJson<T>(T obj, JsonSerializerOptions options = null)
         {
             if (options == null)
                 options = GetDefaultOptions();
