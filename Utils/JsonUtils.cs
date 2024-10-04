@@ -41,8 +41,7 @@ namespace RevitCore.Utils
 
         public static string ToJson<T>(T obj, JsonSerializerOptions options = null)
         {
-            if (options == null)
-                options = GetDefaultOptions();
+            options ??= GetDefaultOptions();
             try
             {
                 return JsonSerializer.Serialize(obj, options);
